@@ -208,10 +208,10 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting,
                   className={"film" + (f.id === filmId ? " on" : "")} onClick={() => setFilmId(f.id)}>
                   <canvas ref={(el) => { thumbRefs.current[i] = el; }} width={96} height={120} />
                   <span className="fn">{f.name}</span>
-                  <span className="fnote">{f.note}</span>
                 </button>
               ))}
             </div>
+            <p className="fnote-sel" aria-live="polite">{film.note}</p>
             <div className="shutter-row">
               <button className="shutter" onClick={begin} disabled={st !== "on"} aria-label="Let’s do this — start the photo session">
                 <i className="dome" />

@@ -1,4 +1,4 @@
-export type FilmId = "bw" | "vintage" | "editorial" | "original";
+export type FilmId = "bw" | "vintage" | "editorial" | "original" | "sepia" | "noir" | "instant";
 type V3 = [number, number, number];
 
 export interface Film {
@@ -40,6 +40,21 @@ export const FILMS: Film[] = [
     id: "original", name: "ORIGINAL", note: "Natural colour. Barely touched.",
     mono: false, sat: 1, bright: 1, contrast: 1.03, gain: ONE, lift: Z,
     shadow: Z, highlight: Z, vig: 0.08, grain: 0.03,
+  },
+  {
+    id: "sepia", name: "SEPIA", note: "Warm brown tones, like an old keepsake.",
+    mono: true, sat: 0, bright: 1.04, contrast: 1.12, gain: [1.12, 0.96, 0.74], lift: [0.05, 0.035, 0.02],
+    shadow: [0.02, 0.008, -0.01], highlight: [0.03, 0.02, -0.03], vig: 0.36, grain: 0.12,
+  },
+  {
+    id: "noir", name: "NOIR", note: "Crushed blacks, hard light, heavy grain.",
+    mono: true, sat: 0, bright: 0.93, contrast: 1.8, gain: ONE, lift: Z,
+    shadow: [0, 0, 0.012], highlight: Z, vig: 0.62, grain: 0.2,
+  },
+  {
+    id: "instant", name: "INSTANT", note: "Soft and faded, like an instant print.",
+    mono: false, sat: 0.86, bright: 1.05, contrast: 0.88, gain: [1.04, 1.02, 0.96], lift: [0.09, 0.085, 0.08],
+    shadow: [-0.012, 0.028, 0.022], highlight: [0.04, 0.02, -0.03], vig: 0.42, grain: 0.07,
   },
 ];
 
