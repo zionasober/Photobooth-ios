@@ -29,9 +29,11 @@ interface Props {
   onDone: (frames: HTMLCanvasElement[], mirror: boolean) => void;
   onExit: () => void;
   exiting?: boolean;
+  sound: boolean;
+  setSound: (v: boolean) => void;
 }
 
-export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting }: Props) {
+export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting, sound, setSound }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const size = useFit(stageRef);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,7 +50,8 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting 
   const [frameNo, setFrameNo] = useState(0);
   const [flash, setFlash] = useState(0);
   const [thumbs, setThumbs] = useState<string[]>([]);
-  const [muted, setMuted] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
+  const muted = !sound;
 
   useEffect(() => { filmRef.current = film; }, [film]);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
@@ -137,13 +140,17 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting 
       if (!alive()) return;
       freeze.current = false;
     }
+    // the live preview dissolves into the dark booth interior before the printer takes over
+    setFadeOut(true);
+    await wait(950);
+    if (!alive()) return;
     cam.stop();
     onDone(frames, mirror);
   }
 
   const st = cam.status;
   return (
-    <main className="screen booth">
+    <main className={"screen booth" + (fadeOut ? " fadeout" : "")}>
       <header className="bar">
         <button className="link" onClick={onExit}>← EXIT</button>
         <span className="bar-title">PHOTOBOOTH / NYC</span>
@@ -151,7 +158,7 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting 
           {cam.canSwitch && st === "on" && phase === "idle" && (
             <button className="link" onClick={() => cam.start(cam.facing === "user" ? "environment" : "user")}>FLIP</button>
           )}
-          <button className="link" onClick={() => setMuted((m) => !m)} aria-pressed={muted}>{muted ? "SOUND OFF" : "SOUND ON"}</button>
+          <button className="link" onClick={() => setSound(!sound)} aria-pressed={sound}>{sound ? "SOUND ON" : "SOUND OFF"}</button>
         </span>
       </header>
 

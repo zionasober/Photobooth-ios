@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Home from "@/components/Home";
 import Booth from "@/components/Booth";
 import Result from "@/components/Result";
+import Printer from "@/components/Printer";
 import Curtains, { type CurtainState } from "@/components/Curtains";
 import Flashes from "@/components/Flashes";
 import { useCamera } from "@/lib/useCamera";
@@ -14,7 +15,7 @@ import type { FilmId } from "@/lib/film";
 export default function Page() {
   const cam = useCamera();
   const reduced = useReducedMotion();
-  const [screen, setScreen] = useState<"home" | "booth" | "result">("home");
+  const [screen, setScreen] = useState<"home" | "booth" | "print" | "result">("home");
   const [curtain, setCurtain] = useState<CurtainState>("closed");
   const [showHome, setShowHome] = useState(true);
   const [leaving, setLeaving] = useState(false);
@@ -22,7 +23,8 @@ export default function Page() {
   const [flashPref, setFlashPref] = useState(true);
   const [soundPref, setSoundPref] = useState(false); // paparazzi shutter audio is off by default
   const [filmId, setFilmId] = useState<FilmId>("bw");
-  const [shot, setShot] = useState<{ frames: HTMLCanvasElement[]; mirror: boolean } | null>(null);
+  const [boothSound, setBoothSound] = useState(true); // shutter + printer sounds (user can mute)
+  const [shot, setShot] = useState<{ frames: HTMLCanvasElement[]; mirror: boolean; seed: number } | null>(null);
   const busy = useRef(false);
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)); };
@@ -75,10 +77,18 @@ export default function Page() {
       <video ref={cam.videoRef} className="src-video" playsInline muted autoPlay />
       {screen === "booth" && (
         <Booth cam={cam} filmId={filmId} setFilmId={setFilmId} onExit={close} exiting={exiting}
-          onDone={(frames, mirror) => { setShot({ frames, mirror }); setScreen("result"); }} />
+          sound={boothSound} setSound={setBoothSound}
+          onDone={(frames, mirror) => {
+            setShot({ frames, mirror, seed: Math.floor(Math.random() * 2147483647) });
+            setScreen("print");
+          }} />
+      )}
+      {screen === "print" && shot && (
+        <Printer frames={shot.frames} mirror={shot.mirror} filmId={filmId} seed={shot.seed}
+          sound={boothSound} setSound={setBoothSound} onCollect={() => setScreen("result")} onExit={close} />
       )}
       {screen === "result" && shot && (
-        <Result frames={shot.frames} mirror={shot.mirror} filmId={filmId} onRetake={retake} onNew={close} />
+        <Result frames={shot.frames} mirror={shot.mirror} filmId={filmId} seed={shot.seed} onRetake={retake} onNew={close} />
       )}
       <Curtains state={curtain} />
       <Flashes enabled={flashPref && screen === "home" && curtain === "closed" && !leaving} sound={soundPref} />

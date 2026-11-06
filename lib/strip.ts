@@ -18,6 +18,7 @@ export interface StripOpts {
   caption: string;
   mirror: boolean;
   date: Date;
+  seed?: number;
 }
 
 export interface Fonts { serif: string; sans: string; hand: string }
@@ -80,10 +81,20 @@ function paperGrain(c: HTMLCanvasElement, amp: number) {
 }
 
 /** Draw a frame with slightly irregular corners and a faint uneven chemical edge, like a real print. */
+export function mulberry32(a: number) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function drawFrame(
   ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, x: number, y: number, w: number, h: number, paper: string,
+  rand: () => number,
 ) {
-  const r = () => w * (0.008 + Math.random() * 0.03);
+  const r = () => w * (0.008 + rand() * 0.03);
   const [a, b, c, d] = [r(), r(), r(), r()];
   ctx.save();
   ctx.beginPath();
@@ -95,8 +106,8 @@ function drawFrame(
   ctx.closePath();
   ctx.clip();
   ctx.drawImage(img, x, y, w, h);
-  const edge = Math.floor(Math.random() * 4);
-  const t = w * (0.03 + Math.random() * 0.05);
+  const edge = Math.floor(rand() * 4);
+  const t = w * (0.03 + rand() * 0.05);
   const vert = edge < 2;
   const g = vert
     ? ctx.createLinearGradient(0, edge === 0 ? y : y + h, 0, edge === 0 ? y + t : y + h - t)
@@ -125,6 +136,7 @@ export async function renderStrip(
   frames: HTMLCanvasElement[], o: StripOpts, P: number, fonts: Fonts,
 ): Promise<HTMLCanvasElement> {
   await loadFonts(fonts);
+  const rand = mulberry32(o.seed ?? Math.floor(Math.random() * 2147483647));
   const theme = BORDERS[o.border];
   const accent = o.border === "red" ? theme.ink : "#b3191f";
   const pH = Math.round(P * RATIO);
@@ -175,11 +187,11 @@ export async function renderStrip(
 
   // photos
   const top = m + head;
-  const pick = Math.floor(Math.random() * 4);
+  const pick = Math.floor(rand() * 4);
   const stamp = `${String(o.date.getMonth() + 1).padStart(2, "0")}${String(o.date.getDate()).padStart(2, "0")}`;
   frames.forEach((f, i) => {
     const y = Math.round(top + i * (pH + lab + gap));
-    drawFrame(ctx, renderFrame(f, o.film, P, o.mirror), m, y, P, pH, theme.bg);
+    drawFrame(ctx, renderFrame(f, o.film, P, o.mirror), m, y, P, pH, theme.bg, rand);
     if (editorial) {
       // grease-pencil frame numbers, like a contact sheet
       const text = `PB-${stamp}-0${i + 1}`;

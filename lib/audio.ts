@@ -39,3 +39,48 @@ export function shutter(vol = 1) {
   o.connect(g).connect(ctx.destination);
   o.start(); o.stop(ctx.currentTime + 0.15);
 }
+
+/** Quiet vintage printer: a low motor hum, soft stepper ticks while feeding, and a gentle clunk when done. */
+export function createPrinterAudio(enabled: () => boolean) {
+  let m: { g: GainNode; src: AudioScheduledSourceNode[] } | null = null;
+  return {
+    motor(on: boolean) {
+      if (!ctx) return;
+      if (on && !m && enabled()) {
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 0.4);
+        g.connect(ctx.destination);
+        const o = ctx.createOscillator();
+        o.type = "sawtooth"; o.frequency.value = 47;
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass"; lp.frequency.value = 170;
+        o.connect(lp).connect(g); o.start();
+        const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+        const ch = nb.getChannelData(0);
+        for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+        const ns = ctx.createBufferSource();
+        ns.buffer = nb; ns.loop = true;
+        const bp = ctx.createBiquadFilter();
+        bp.type = "bandpass"; bp.frequency.value = 650; bp.Q.value = 0.8;
+        const ng = ctx.createGain(); ng.gain.value = 0.22;
+        ns.connect(bp).connect(ng).connect(g); ns.start();
+        m = { g, src: [o, ns] };
+      } else if (!on && m) {
+        const { g, src } = m;
+        g.gain.cancelScheduledValues(ctx.currentTime);
+        g.gain.setValueAtTime(g.gain.value, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);
+        src.forEach((s) => s.stop(ctx!.currentTime + 0.3));
+        m = null;
+      }
+    },
+    tick() { if (ctx && enabled()) click(0, 0.018, 1300 + Math.random() * 500, 0.2); },
+    done() {
+      if (!ctx || !enabled()) return;
+      click(0, 0.05, 900, 0.45);
+      click(0.07, 0.06, 500, 0.3);
+    },
+    stop() { this.motor(false); },
+  };
+}

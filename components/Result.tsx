@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FILMS, FilmId, getFilm, renderFrame } from "@/lib/film";
-import { BORDERS, BorderId, LayoutId, StripOpts, getFonts, renderStrip } from "@/lib/strip";
+import { BORDERS, BorderId, LayoutId, StripOpts, fmtDate, getFonts, renderStrip } from "@/lib/strip";
 
 interface Props {
   frames: HTMLCanvasElement[];
   mirror: boolean;
   filmId: FilmId;
+  seed: number;
   onRetake: () => void;
   onNew: () => void;
 }
@@ -24,7 +25,7 @@ function save(blob: Blob, name: string) {
 const toBlob = (c: HTMLCanvasElement) =>
   new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/png"));
 
-export default function Result({ frames, mirror: mirror0, filmId: film0, onRetake, onNew }: Props) {
+export default function Result({ frames, mirror: mirror0, filmId: film0, seed, onRetake, onNew }: Props) {
   const [date] = useState(() => new Date());
   const [filmId, setFilmId] = useState<FilmId>(film0);
   const [border, setBorder] = useState<BorderId>("white");
@@ -48,8 +49,8 @@ export default function Result({ frames, mirror: mirror0, filmId: film0, onRetak
   }, []);
 
   const opts: StripOpts = useMemo(() => ({
-    film: getFilm(filmId), border, layout, showDate, caption: debounced, mirror, date,
-  }), [filmId, border, layout, showDate, debounced, mirror, date]);
+    film: getFilm(filmId), border, layout, showDate, caption: debounced, mirror, date, seed,
+  }), [filmId, border, layout, showDate, debounced, mirror, date, seed]);
 
   // on-screen preview + frame thumbs
   useEffect(() => {
@@ -96,18 +97,15 @@ export default function Result({ frames, mirror: mirror0, filmId: film0, onRetak
         <span className="bar-r"><span className="hide-s">{date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }).toUpperCase()}</span></span>
       </header>
 
-      <div className="scene">
-        <div className="sign">Photos delivered here</div>
-        <div className="plate" style={{ ["--ratio" as string]: preview?.ratio ?? 0.2 }}>
-          <i className="led" />
-          <div className="slotbox"><div className="slot-in" /></div>
-        </div>
-        <div className="out" style={{ ["--ratio" as string]: preview?.ratio ?? 0.2 }}>
+      <div className="prevstage">
+        <div className="prevspot" />
+        <div className="prevstrip" style={{ ["--ratio" as string]: preview?.ratio ?? 0.19 }}>
           {preview && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="strip" src={preview.url} alt="Your photo strip" draggable={false} />
+            <img className="pv" src={preview.url} alt="Your photo strip" draggable={false} />
           )}
         </div>
+        <p className="prevcap">N°001 — {getFilm(filmId).name} — {fmtDate(date)}</p>
       </div>
 
       <section className="controls">
