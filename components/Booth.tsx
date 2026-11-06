@@ -28,9 +28,10 @@ interface Props {
   setFilmId: (f: FilmId) => void;
   onDone: (frames: HTMLCanvasElement[], mirror: boolean) => void;
   onExit: () => void;
+  exiting?: boolean;
 }
 
-export default function Booth({ cam, filmId, setFilmId, onDone, onExit }: Props) {
+export default function Booth({ cam, filmId, setFilmId, onDone, onExit, exiting }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const size = useFit(stageRef);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -167,7 +168,7 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit }: Props)
           {count !== null && <div key={count} className="count" aria-live="assertive">{count}</div>}
           {flash > 0 && <div key={`f${flash}`} className="flash" />}
           {flash > 0 && <div key={`s${flash}`} className="shbars"><i /><i /></div>}
-          {st !== "on" && (
+          {st !== "on" && !exiting && (
             <div className="msg">
               {st === "starting" && <p className="msg-k">Opening the shutter…</p>}
               {st === "off" && (<><h2>Camera’s off.</h2><button className="cta cta-light small" onClick={() => cam.start(cam.facing)}>TURN ON CAMERA</button></>)}
@@ -204,9 +205,19 @@ export default function Booth({ cam, filmId, setFilmId, onDone, onExit }: Props)
                 </button>
               ))}
             </div>
-            <button className="cta cta-red" onClick={begin} disabled={st !== "on"}>
-              <span>LET’S DO THIS</span><span className="arrow" aria-hidden="true">→</span>
-            </button>
+            <div className="shutter-row">
+              <button className="shutter" onClick={begin} disabled={st !== "on"} aria-label="Let’s do this — start the photo session">
+                <i className="dome" />
+              </button>
+              <div className="shtext">
+                <span className="shlabel">LET’S DO THIS</span>
+                <span className="lamps" aria-hidden="true">
+                  <span className="lamp on"><i />POWER</span>
+                  <span className={"lamp" + (st === "on" ? " on" : "")}><i />CAMERA</span>
+                  <span className="lamp"><i />FILM</span>
+                </span>
+              </div>
+            </div>
           </>
         ) : (
           <>

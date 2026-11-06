@@ -26,15 +26,15 @@ function click(at: number, dur: number, freq: number, gain: number) {
 }
 
 /** Mechanical leaf-shutter: two clicks and a soft thunk. */
-export function shutter() {
+export function shutter(vol = 1) {
   if (!ctx) return;
-  click(0, 0.05, 3200, 0.9);
-  click(0.09, 0.07, 1800, 0.7);
+  click(0, 0.05, 3200, 0.9 * vol);
+  click(0.09, 0.07, 1800, 0.7 * vol);
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.frequency.setValueAtTime(140, ctx.currentTime);
   o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.12);
-  g.gain.setValueAtTime(0.35, ctx.currentTime);
+  g.gain.setValueAtTime(0.35 * vol, ctx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
   o.connect(g).connect(ctx.destination);
   o.start(); o.stop(ctx.currentTime + 0.15);
